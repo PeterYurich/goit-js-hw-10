@@ -10,7 +10,7 @@ const DEBOUNCE_DELAY = 300;
 
 const inputEl = document.querySelector('#search-box')
 const countryInfo = document.querySelector('.country-info')
-
+const countryListEl = document.querySelector('.country-list')
 
 inputEl.addEventListener('input', _.debounce(onSearch, 300))
 
@@ -25,16 +25,26 @@ function onSearch (e) {
     }
 
     fetchCountries(inputValue)
+    .then((result) => {
+        if (result.status === 404) {
+            Notiflix.Notify.failure("Oops, there is no country with that name")
+            countryInfo.innerHTML = '';
+        }
+        return result
+    })
     .then(alertIfToMany)
     .then(renderSeveralCountries)
     .then(renderOneCountry)
     .catch(onError)
+    .finally(() => {console.log('*********break**********')})
 }
 
 function alertIfToMany (array) {
+    console.log(array.length)
     if (array.length > 10) {
         countryInfo.innerHTML = '';
-        Notiflix.Notify.info('Too many matches found. Please enter a more specific name.')
+        countryListEl.innerHTML = '';
+        Notiflix.Notify.info('Too many matches found. Please enter a more specific name.');
         console.log("too many")
         return
     }
@@ -44,10 +54,12 @@ function alertIfToMany (array) {
 function renderSeveralCountries (severalCountriesArray) {
     if (severalCountriesArray.length > 1 && severalCountriesArray.length < 11) {
         console.log("there are 2...10 countries. I need to make a markup")
-        countryInfo.innerHTML = severalCountriesArray.reduce((acc, country) => {
-            return acc + `
-            <img class="image"src="${country.flags.svg}" >
-            <h2>${country.name.official}</h2>`
+        countryInfo.innerHTML = ""
+        countryListEl.innerHTML = severalCountriesArray.reduce((acc, country) => {
+            return acc + `<li class="country-head">
+            <img class="image" src="${country.flags.svg}" >
+            <h2 class="counties-name">${country.name.official}</h2>
+            </li>`
         }, "")
         return
     }
@@ -55,22 +67,24 @@ function renderSeveralCountries (severalCountriesArray) {
 }
 
 function renderOneCountry (oneCountryArray) {
-    // if (oneCountryArray.length === 1) {
+    if (oneCountryArray.length === 1) {
         console.log("it's found one country")
+        countryListEl.innerHTML = ""
         countryInfo.innerHTML = oneCountryArray.reduce((acc, country) => {
-            return acc + `<img class="image"src="${country.flags.svg}" />
-            <h2>${country.name.official}</h2>
-            <p>capital: ${country.capital}</p>
-            <p>population: ${country.population}</p>
-            <p>languages: ${Object.values(country.languages)}</p>`
+            return acc + `<li class="country-head">
+            <img class="single-image" src="${country.flags.svg}" >
+            <h2 class="county-name">${country.name.official}</h2>
+            </li>
+            <p class="country-info-item"><span class="country-property">Capital:</span> ${country.capital}</p>
+            <p class="country-info-item"><span class="country-property">Population:</span> ${country.population}</p>
+            <p class="country-info-item"><span class="country-property">Languages:</span> ${Object.values(country.languages)}</p>`
         }, "")
-        // }
-        return 
+        }
+        return oneCountryArray
 }
 
 function onError ()  {
-    // if (response.status = "404") {
-        Notiflix.Notify.failure("Oops, there is no country with that name")
-        countryInfo.innerHTML = '';
-    // }
+    console.log('inside error-function')
+        // Notiflix.Notify.failure("Oops, there is no country with that name")
+        // countryInfo.innerHTML = '';
 }
