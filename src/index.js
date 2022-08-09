@@ -20,7 +20,7 @@ function onSearch (e) {
 
     if (inputValue === "") {
         countryInfo.innerHTML = '';
-        console.log('the value is empty')
+        countryListEl.innerHTML = '';
         return
     }
 
@@ -29,6 +29,7 @@ function onSearch (e) {
         if (result.status === 404) {
             Notiflix.Notify.failure("Oops, there is no country with that name")
             countryInfo.innerHTML = '';
+            countryListEl = '';
         }
         return result
     })
@@ -45,7 +46,6 @@ function alertIfToMany (array) {
         countryInfo.innerHTML = '';
         countryListEl.innerHTML = '';
         Notiflix.Notify.info('Too many matches found. Please enter a more specific name.');
-        console.log("too many")
         return
     }
     return array
@@ -53,7 +53,6 @@ function alertIfToMany (array) {
 
 function renderSeveralCountries (severalCountriesArray) {
     if (severalCountriesArray.length > 1 && severalCountriesArray.length < 11) {
-        console.log("there are 2...10 countries. I need to make a markup")
         countryInfo.innerHTML = ""
         countryListEl.innerHTML = severalCountriesArray.reduce((acc, country) => {
             return acc + `<li class="country-head">
@@ -68,7 +67,6 @@ function renderSeveralCountries (severalCountriesArray) {
 
 function renderOneCountry (oneCountryArray) {
     if (oneCountryArray.length === 1) {
-        console.log("it's found one country")
         countryListEl.innerHTML = ""
         countryInfo.innerHTML = oneCountryArray.reduce((acc, country) => {
             return acc + `<li class="country-head">
