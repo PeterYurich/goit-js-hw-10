@@ -1,88 +1,81 @@
 import './css/styles.css';
-import _ from 'lodash';
-import {fetchCountries} from "./fetchCountries";
-// import "./fetchCountries"
 import Notiflix from "notiflix";
+import axios from 'axios';
 
+const refs = {
+    form: document.querySelector('#search-form'),
+    gallery: document.querySelector(".gallery"),
+    loadMoreBtn: document.querySelector(".load-more"),
+    input: document.querySelector("[name=searchQuery]")
+}
 
+refs.input.value = "violet sun flowers summer"
 
-const DEBOUNCE_DELAY = 300;
+const BASE_URL = 'https://pixabay.com/api/';
+const API_KEY = "29220368-6467898673c76bc95c006b920";
 
-const inputEl = document.querySelector('#search-box')
-const countryInfo = document.querySelector('.country-info')
-const countryListEl = document.querySelector('.country-list')
+let currentPage = 0;
+const perPage = 40;
 
-inputEl.addEventListener('input', _.debounce(onSearch, 300))
+function makeCurrentUrlRequest() {
+    page = page + 1;
+    console.log('page is', page)
+    const searchRequest = refs.input.value
+    return `${BASE_URL}?key=${API_KEY}&q=(${searchRequest})&image_type="photo"&orientation="horizontal"&safesearch="true"&per_page=${perPage}&page=${currentPage}`;
 
-function onSearch (e) {
-    e.preventDefault();
-    const inputValue = e.target.value.trim();
+}
 
-    if (inputValue === "") {
-        countryInfo.innerHTML = '';
-        countryListEl.innerHTML = '';
-        return
+const makeMarkup = (acc, item) => {
+    return acc + `<div class="photo-card">
+        <img src="${item.previewURL}" alt="${item.tags}" loading="lazy" />
+        <div class="info">
+            <p class="info-item">
+            <b>Likes: ${item.likes}</b>
+            </p>
+            <p class="info-item">
+            <b>Views: ${item.views}</b>
+            </p>
+            <p class="info-item">
+            <b>Comments: ${item.comments}</b>
+            </p>
+            <p class="info-item">
+            <b>Downloads: ${item.downloads}</b>
+            </p>
+        </div>
+        </div>`
+}
+
+const getPictures = async (e) => {
+    e.preventDefault()
+    refs.gallery.innerHTML = ''
+
+    const url = makeCurrentUrlRequest()
+    const res = await (await axios.get(url)).data
+
+    if (res.total === 0) {
+        Notiflix.Notify.info("Sorry, there are no images matching your search query. Please try again.")
+        refs.gallery.innerHTML = ''
     }
 
-    fetchCountries(inputValue)
-    .then((result) => {
-        if (result.status === 404) {
-            Notiflix.Notify.failure("Oops, there is no country with that name")
-            countryInfo.innerHTML = '';
-            countryListEl = '';
-        }
-        return result
-    })
-    .then(alertIfToMany)
-    .then(renderSeveralCountries)
-    .then(renderOneCountry)
-    .catch(onError)
-    .finally(() => {console.log('*********break**********')})
+    const markupStr = await res.hits.reduce(makeMarkup, "")
+    refs.gallery.innerHTML = markupStr
+
+    refs.loadMoreBtn.classList.remove("visually-hidden")
 }
 
-function alertIfToMany (array) {
-    console.log(array.length)
-    if (array.length > 10) {
-        countryInfo.innerHTML = '';
-        countryListEl.innerHTML = '';
-        Notiflix.Notify.info('Too many matches found. Please enter a more specific name.');
-        return
+const getMorePictures = async (e) => {
+    const url = makeCurrentUrlRequest()
+    const res = await (await axios.get(url)).data
+
+    if (Number(res.total / (page * perPage) <= 1)) {
+        Notiflix.Notify.info("Here are all the matching results")
+        refs.loadMoreBtn.classList.add('visually-hidden')
     }
-    return array
+
+    const markupStr = await res.hits.reduce(makeMarkup, "")
+
+    refs.gallery.insertAdjacentHTML("beforeend", markupStr)
 }
 
-function renderSeveralCountries (severalCountriesArray) {
-    if (severalCountriesArray.length > 1 && severalCountriesArray.length < 11) {
-        countryInfo.innerHTML = ""
-        countryListEl.innerHTML = severalCountriesArray.reduce((acc, country) => {
-            return acc + `<li class="country-head">
-            <img class="image" src="${country.flags.svg}" >
-            <h2 class="counties-name">${country.name.official}</h2>
-            </li>`
-        }, "")
-        return
-    }
-    return severalCountriesArray
-}
-
-function renderOneCountry (oneCountryArray) {
-    if (oneCountryArray.length === 1) {
-        countryListEl.innerHTML = ""
-        countryInfo.innerHTML = oneCountryArray.reduce((acc, country) => {
-            return acc + `<li class="country-head">
-            <img class="single-image" src="${country.flags.svg}" >
-            <h2 class="county-name">${country.name.official}</h2>
-            </li>
-            <p class="country-info-item"><span class="country-property">Capital:</span> ${country.capital}</p>
-            <p class="country-info-item"><span class="country-property">Population:</span> ${country.population}</p>
-            <p class="country-info-item"><span class="country-property">Languages:</span> ${Object.values(country.languages)}</p>`
-        }, "")
-        }
-        return oneCountryArray
-}
-
-function onError ()  {
-    console.log('inside error-function')
-        // Notiflix.Notify.failure("Oops, there is no country with that name")
-        // countryInfo.innerHTML = '';
-}
+refs.form.addEventListener('submit', getPictures)
+refs.loadMoreBtn.addEventListener('click', getMorePictures)
