@@ -3,6 +3,11 @@ import './css/styles.css';
 import Notiflix from "notiflix";
 import axios from 'axios';
 
+import "simplelightbox/dist/simple-lightbox.min.css";
+// import {SimpleLightbox} from "simplelightbox";
+import simpleLightbox from 'simplelightbox';
+
+
 const refs = {
     form: document.querySelector('#search-form'),
     gallery: document.querySelector(".gallery"),
@@ -19,37 +24,43 @@ let currentPage = 0;
 const perPage = 40;
 
 function makeCurrentUrlRequest() {
-    page = page + 1;
-    console.log('page is', page)
+    currentPage += 1;
     const searchRequest = refs.input.value
     return `${BASE_URL}?key=${API_KEY}&q=(${searchRequest})&image_type="photo"&orientation="horizontal"&safesearch="true"&per_page=${perPage}&page=${currentPage}`;
 
 }
 
 const makeMarkup = (acc, item) => {
-    return acc + `<div class="photo-card">
-        <img src="${item.previewURL}" alt="${item.tags}" loading="lazy" />
+    return acc + `
+    <div class="photo-card">
+        <a class="img-link" href="${item.largeImageURL}"><img class="image" src="${item.previewURL}" alt="${item.tags}" loading="lazy"/></a>
         <div class="info">
             <p class="info-item">
-            <b>Likes: ${item.likes}</b>
+                <b>Likes:</b> 
+                <span class="info-value">${item.likes}</span>
             </p>
             <p class="info-item">
-            <b>Views: ${item.views}</b>
+                <b>Views:</b> 
+                <span class="info-value">${item.views}</span>
             </p>
             <p class="info-item">
-            <b>Comments: ${item.comments}</b>
+                <b>Comments:</b> 
+                <span class="info-value">${item.comments}</span>
             </p>
             <p class="info-item">
-            <b>Downloads: ${item.downloads}</b>
+                <b>Downloads:</b> 
+                <span class="info-value">${item.downloads}</span>
             </p>
         </div>
-        </div>`
+    </div>
+    `
 }
 
 const getPictures = async (e) => {
     e.preventDefault()
     refs.gallery.innerHTML = ''
 
+    currentPage = 0;
     const url = makeCurrentUrlRequest()
     const res = await (await axios.get(url)).data
 
@@ -68,8 +79,8 @@ const getMorePictures = async (e) => {
     const url = makeCurrentUrlRequest()
     const res = await (await axios.get(url)).data
 
-    if (Number(res.total / (page * perPage) <= 1)) {
-        Notiflix.Notify.info("Here are all the matching results")
+    if (Number(res.total / (currentPage * perPage) <= 1)) {
+        Notiflix.Notify.info("Now you can see all the matching results we have")
         refs.loadMoreBtn.classList.add('visually-hidden')
     }
 
@@ -80,3 +91,17 @@ const getMorePictures = async (e) => {
 
 refs.form.addEventListener('submit', getPictures)
 refs.loadMoreBtn.addEventListener('click', getMorePictures)
+
+// lightbox:
+
+refs.gallery.addEventListener('click', (e) => {
+    e.preventDefault()
+    if (e.target.nodeName !== "IMG") { return  console.log('its not IMG')}
+    console.log('img')
+    let lightbox  = new simpleLightbox('.photo-card a');
+    console.log(lightbox)
+    lightbox.on('show.simplelightbox', {
+    // 	// do something…
+    });
+})
+
