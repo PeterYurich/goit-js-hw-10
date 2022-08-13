@@ -1,88 +1,53 @@
 import './css/styles.css';
-import _ from 'lodash';
-import {fetchCountries} from "./fetchCountries";
+import { fetchCountries } from "./fetchPictures";
 // import "./fetchCountries"
 import Notiflix from "notiflix";
+import { Tooltip as Tooltip, Toast as Toast, Popover as Popover } from 'bootstrap';
+import axios from 'axios';
 
+const BASE_URL = 'https://pixabay.com/api/';
+const API_KEY = "29220368-6467898673c76bc95c006b920";
 
-
-const DEBOUNCE_DELAY = 300;
-
-const inputEl = document.querySelector('#search-box')
-const countryInfo = document.querySelector('.country-info')
-const countryListEl = document.querySelector('.country-list')
-
-inputEl.addEventListener('input', _.debounce(onSearch, 300))
-
-function onSearch (e) {
-    e.preventDefault();
-    const inputValue = e.target.value.trim();
-
-    if (inputValue === "") {
-        countryInfo.innerHTML = '';
-        countryListEl.innerHTML = '';
-        return
-    }
-
-    fetchCountries(inputValue)
-    .then((result) => {
-        if (result.status === 404) {
-            Notiflix.Notify.failure("Oops, there is no country with that name")
-            countryInfo.innerHTML = '';
-            countryListEl = '';
-        }
-        return result
-    })
-    .then(alertIfToMany)
-    .then(renderSeveralCountries)
-    .then(renderOneCountry)
-    .catch(onError)
-    .finally(() => {console.log('*********break**********')})
+const refs = {
+    form: document.querySelector('#search-form'),
+    gallery: document.querySelector(".gallery"),
+    loadMoreBtn: document.querySelector(".load-more"),
+    input: document.querySelector("[name=searchQuery]")
 }
 
-function alertIfToMany (array) {
-    console.log(array.length)
-    if (array.length > 10) {
-        countryInfo.innerHTML = '';
-        countryListEl.innerHTML = '';
-        Notiflix.Notify.info('Too many matches found. Please enter a more specific name.');
-        return
-    }
-    return array
+console.log(refs.input)
+
+const cardLayout = `<div class="photo-card">
+<img src="" alt="" loading="lazy" />
+<div class="info">
+    <p class="info-item">
+    <b>Likes</b>
+    </p>
+    <p class="info-item">
+    <b>Views</b>
+    </p>
+    <p class="info-item">
+    <b>Comments</b>
+    </p>
+    <p class="info-item">
+    <b>Downloads</b>
+    </p>
+</div>
+</div>`
+
+refs.input.value = "yellow+flowers"
+
+const searchRequest = refs.input.value
+
+console.log(searchRequest)
+
+const url = `${BASE_URL}?key=${API_KEY}&q=(${searchRequest})&image_type="photo"&orientation="horizontal"&safesearch="true"?per_page="40"`
+console.log(url)
+
+async function getPictures (url) {
+    const res = await axios.get(url)
+    console.log(res)
+
 }
 
-function renderSeveralCountries (severalCountriesArray) {
-    if (severalCountriesArray.length > 1 && severalCountriesArray.length < 11) {
-        countryInfo.innerHTML = ""
-        countryListEl.innerHTML = severalCountriesArray.reduce((acc, country) => {
-            return acc + `<li class="country-head">
-            <img class="image" src="${country.flags.svg}" >
-            <h2 class="counties-name">${country.name.official}</h2>
-            </li>`
-        }, "")
-        return
-    }
-    return severalCountriesArray
-}
-
-function renderOneCountry (oneCountryArray) {
-    if (oneCountryArray.length === 1) {
-        countryListEl.innerHTML = ""
-        countryInfo.innerHTML = oneCountryArray.reduce((acc, country) => {
-            return acc + `<li class="country-head">
-            <img class="single-image" src="${country.flags.svg}" >
-            <h2 class="county-name">${country.name.official}</h2>
-            </li>
-            <p class="country-info-item"><span class="country-property">Capital:</span> ${country.capital}</p>
-            <p class="country-info-item"><span class="country-property">Population:</span> ${country.population}</p>
-            <p class="country-info-item"><span class="country-property">Languages:</span> ${Object.values(country.languages)}</p>`
-        }, "")
-        }
-        return oneCountryArray
-}
-
-function onError ()  {
-    console.log('inside error-function')
-        // Notiflix.Notify.failure("Oops, there is no country with that name")
-        // countryInfo.innerHTML = '';
-}
+refs.form.addEventListener('submit', getPictures(url))
